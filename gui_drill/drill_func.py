@@ -18,7 +18,6 @@ import drill_main
 import drill_gui
 
 
-
 # catch if the user's clicks on the windows upper-right 'X' to ensure they want to close
 def ask_quit(self):
     if messagebox.askokcancel("Exit program", "Okay to exit application?"):
