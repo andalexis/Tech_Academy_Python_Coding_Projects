@@ -11,7 +11,7 @@ from tkinter import messagebox
 import dir_main
 
 # folder_path not defined. variable import error?
-# Cory: what do you mean by variable import error
+
     #def browse_button():
         # Allow user to select a directory and store it in global var
         # called folder_path
@@ -25,6 +25,9 @@ def ask_quit(self):
     if messagebox.askokcancel("Exit program", "Okay to exit application?"):
         # This closes app
         self.master.destroy()
+
+
+#=====================================================================
 
 
 

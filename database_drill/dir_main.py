@@ -10,9 +10,11 @@ from tkinter import messagebox
 import os
 
 import dir_func
+import sqlite3
+import shutil
 
 
-
+qualifying = []
 
 
 # Frame is the Tkinter frame class that our own class will inherit from
@@ -33,6 +35,7 @@ class ParentWindow(Frame):
 
         # call method
         load_gui(self,folder_path1,folder_path2)
+        create_db()
 
 
 def load_gui(self,folder_path1,folder_path2):
@@ -58,12 +61,12 @@ def load_gui(self,folder_path1,folder_path2):
     lbl1 = Label(master=root,textvariable=folder_path2,borderwidth=2, relief="sunken", bg="white")
     lbl1.grid(row=22, column=0,rowspan=7,columnspan=3,padx=(30,0),pady=(10,0),sticky=N+E+S+W)
 
-    # Move Prompt
+    # Move Prompt label
     self.lbl_info = tk.Label(self.master,text='Move all files ending in .txt to selected destination directory:')
     self.lbl_info.grid(row=30,column=0,rowspan=4,padx=(27,0), pady=(10,0),sticky=N+W)
     
-    # Move button
-    button2 = Button(text="Move All!", command=browse_button_2)
+    # Move Prompt button
+    button2 = Button(text="Move All!", command=lambda: move(filename,filename2))
     button2.grid(row=40, column=0,padx=(30,0),pady=(10,0), sticky=W)
     
 
@@ -78,22 +81,28 @@ def browse_button_1():
     filename = filedialog.askdirectory()
     folder_path1.set(filename)
     print(filename)
-    iterate(filename) #new addition
+    iterate(filename)
+    
     
 # function for second selected directory
 def browse_button_2():
     # Allow user to select a directory and store it in global var
     # called folder_path
     global folder_path2
-    filename = filedialog.askdirectory()
-    folder_path2.set(filename)
-    print(filename)
+    filename2 = filedialog.askdirectory()
+    folder_path2.set(filename2)
+    print(filename2)
+    ##iterate(filename,filename2)
+    
+    
+
 
 
 # function to iterate through selected directory
 # and pull out the files ending in .txt
 def iterate(filename):
     path = filename
+    #qualifying = []
     dir_list = os.listdir(path)
     print("Files in '", path, "' :")
     #print the list
@@ -102,21 +111,75 @@ def iterate(filename):
     for file in dir_list:
         if file.endswith(".txt"):
             print(file)
+            qualifying.append(file)
             absolutepath(file,path)
-
-def absolutepath(file,path):
-    print("The absolute file path for this file is: \n")
-    absolute = (os.path.join(path, file) + "\n")
-    print(absolute)
-    mtime(path,file,absolute)
-
-def mtime(path,file,absolute):
-    mtime = os.path.getmtime(file)
-    print("The last modification of this path: \n")
-    print(mtime)
+    print(qualifying)
     
 
 
+# functon that creates the file's absolute path
+def absolutepath(file,path):
+    print("The absolute file path for this file is: \n")
+    absolute = (os.path.join(path,file))
+    print(absolute)
+    mtime(path,file,absolute)
+
+# function that retieves modified time stamp
+def mtime(path,file,absolute):
+    mtime = os.path.getmtime(absolute)
+    print("The last modification of this path:")
+    print(mtime)
+    print("\n")
+    insertion(file,mtime)
+
+
+#==========================================
+# Sql portion of python drill
+#
+# Creates database and records the qualifying file
+# and coresponding modified time-stamp
+
+
+
+def create_db():
+    conn = sqlite3.connect('db_timestamp.db')
+    with conn:
+        cur = conn.cursor()
+        cur.execute("CREATE TABLE if not exists tbl_data( \
+            ID INTEGER PRIMARY KEY AUTOINCREMENT, \
+            col_filename TEXT, \
+            col_mtime TEXT \
+            );")
+        # commit() to save changes & close the database connection
+        conn.commit()
+    conn.close()
+
+
+def insertion(file,mtime):
+    conn = sqlite3.connect('db_timestamp.db')
+    with conn:
+        conn.execute("INSERT INTO tbl_data(col_filename, col_mtime) VALUES(?,?)", \
+                    (file, mtime))
+        conn.commit()
+    conn.close()
+    
+    
+    
+#============================================
+# move functions that use move() method from the Shutil
+# module to cut all qualifying files
+# and paste them within the destination directory
+
+
+def move(filename,filename2):
+    # Source Path
+    source = filename
+    # Destination Path
+    destination = filename2
+    # Move the qualifying content of source to destination
+    for i in qualifying:
+        dest = shutil.move(source,destination)
+        print("Destination path:", dest)
 
 
 
@@ -131,6 +194,7 @@ def mtime(path,file,absolute):
 
 if __name__ == "__main__":
     root = tk.Tk()
+    conn = sqlite3.connect('db_timestamp.db')
     folder_path1 = StringVar()
     folder_path2 = StringVar()
     App = ParentWindow(root)
